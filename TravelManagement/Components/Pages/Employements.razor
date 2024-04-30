@@ -1,0 +1,84 @@
+﻿@page "/employment"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@using BLL.Services
+@using Entities.Models
+@using WebApp.Components.Layout
+@layout MainLayout
+
+<PageTitle> Colaboradores</PageTitle>
+
+<div class="row">
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="card-title">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <h5 class="card-title">Datos de colaboradores</h5>
+                    </div>
+                    <div class="col-lg-4">
+                        <button type="button" @onclick="Create" class="btn btn-outline-info">Crear nuevo Colaborador</button>
+                    </div>
+                </div>
+                
+
+            </h5>
+        </div>
+        <div class="card-body">
+           
+            <div class="row">
+                
+                <table class="table table-bordered"> 
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nombre</th>
+                            <th>Dirección</th>
+                           
+                        </tr>
+                    </thead>
+                    <tbody>
+                       
+                            @if (ListEmployee == null)
+                            {
+                                <h6>Cargando colaboradores..</h6>
+                            }else if (ListEmployee.Count == 0)
+                            {
+                                <h6>No hay colaboradores.</h6>
+                            }else{
+                                foreach (var item in ListEmployee)
+                                {
+                                <tr>
+                                    <td>@item.EmployeeId</td>
+                                    <td>@item.Name</td>
+                                    <td>@item.Address</td>
+                                  
+                                </tr>
+                                }
+                            }
+                           
+                       
+                    </tbody>
+
+                </table>
+        </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] EmployeeService  employeeService{ get; set; }
+    [Inject] NavigationManager navigationManager { get; set; }
+    private List<Employee> ListEmployee{ get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        ListEmployee = await employeeService.GetEmployeesAsync();
+
+    }
+    protected void Create()
+    {
+        navigationManager.NavigateTo("createEmployee");
+    }
+
+   
+}

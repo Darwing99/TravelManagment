@@ -1,0 +1,82 @@
+﻿@page "/createCarrier"
+@layout MainLayout
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@using BLL.Services
+@using Entities.Models
+@using WebApp.Components.Layout
+<PageTitle> Agregar Transportista</PageTitle>
+
+<div class="row">
+    <div class="card">
+        <h6 class="card-title">Agregar transportista</h6>
+        <div class="card-body">
+            <div class="row mb-3">
+                <label class="col-sm-4 col-form-label">Nombre</label>
+                <div class="col-sm-8">
+                    <input type="text" class="form-control" @bind="name" />
+                </div>
+            </div>
+
+
+
+            <div class="row mb-3">
+                <label class="col-sm-4 col-form-label">Tarifa por kilometro</label>
+                <div class="col-sm-8">
+                    <input type="text" class="form-control" @bind="RatePerKilometer" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+
+                <div class="col-sm-8">
+                    <button @onclick="SaveCarrier" class="btn btn-outline-success">Guardar Transportista</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@code {
+    [Inject] CarrierService carrierService { get; set; }
+    [Inject] AlertServices AlertServices { get; set; }
+    [Inject] NavigationManager navigationManager { get; set; }
+    private string name, address;
+    private decimal RatePerKilometer;
+    private Carrier? carrier { get; set; }
+    private async Task SaveCarrier()
+    {
+
+        if (await validation())
+        {
+            carrier = new()
+                {
+                    Name = name,
+                    RatePerKilometer = RatePerKilometer,
+                    Status = true
+                };
+
+            var result = await carrierService.SaveCarrierAsync(carrier);
+            if (result)
+            {
+                await AlertServices.SweetAlertMessage("Guardado", "Transportista Agregado,", SweetAlertIcon.Success, 1000);
+                name = address = string.Empty;
+                navigationManager.NavigateTo("carrier");
+            }
+        }
+    }
+    private async Task<bool> validation()
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            await AlertServices.SweetAlertMessage("Validación", "El nombre de transportista está vacío,", SweetAlertIcon.Warning, 1000);
+            return false;
+        }
+        if (string.IsNullOrEmpty(RatePerKilometer.ToString()) || RatePerKilometer == 0)
+        {
+            await AlertServices.SweetAlertMessage("Validación", "la tarifa está vacía,", SweetAlertIcon.Warning, 1000);
+            return false;
+        }
+        return true;
+    }
+
+}

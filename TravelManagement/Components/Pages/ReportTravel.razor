@@ -1,0 +1,148 @@
+﻿@page "/report"
+@layout MainLayout
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@using BLL.Services
+@using Entities.Models
+@using WebApp.Components.Layout
+<PageTitle>Reportes de viajes</PageTitle>
+<div class="row">
+    <div class="card">
+        <h6 class="card-title">
+            Reporte de Viajes por transportista
+         </h6>
+         <div class="card-body">
+            
+                <div class="row">
+                    <div class="col-lg-8">
+                    <label class="col-lg-4 col-form-label">Transportista</label>
+                    <div class="col-lg-8">
+                        <select @onchange="HandleSelectionCarrierChange"  class="form-select" aria-label="Default select example">
+                            <option value="0" selected>Seleccionar Transportista</option>
+                            @if (ListCarriers == null)
+                            {
+                                <option value="0"> Cargando información...</option>
+                            }
+                            else
+                            {
+                                foreach (var item in ListCarriers)
+                                {
+                                    <option value="@item.CarrierId">@item.Name</option>
+                                }
+
+                            }
+
+
+                        </select>
+                    </div>
+                    </div>
+                    <div class="col-lg-4">
+                         <label class="col-lg-4 col-form-label">fecha</label>
+                        <div class="col-lg-8">
+                        <DateRangePicker OnRangeSelect="OnRangeSelected" class="form-control form-control-sm " placeholder="Seleccionar fechas..." />
+                        </div>
+                    </div>
+               
+                   
+                </div>
+            
+             <div class="row pt-2">
+                @if (travelDetails == null)
+                {
+                  
+                }
+                else if (travelDetails.Count == 0)
+                {
+                    <h6>No hay viajes en estas fechas...</h6>
+                }
+                  else{
+                          
+                    <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">Colaborador</th>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Distancia</th>
+                            <th scope="col">Usuario</th>
+                         
+                            <th scope="col">Tarifa/km</th>
+                            <th scope="col">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                      
+                           @foreach (var item in travelDetails)
+                            {
+                                <tr>
+                                    <th>@item.NameEmployee</th>
+                                    <th>@item.Date</th>
+                                    <th>@item.DistanceTraveled</th>
+                                    <th>@item.CreatedBy</th>
+                                   
+                                    <th>@item.RatePerKilometer</th>
+                                    <th >@item.Total</th>
+                                   
+                                </tr>
+                            }
+                            
+                          
+                           
+                    </tbody>
+                </table>
+                }
+             </div>
+           <div class="row pt-2">
+               <h6 >Total a pagar: @Total</h6>
+           </div>
+         </div>
+    </div>
+</div>
+@code {
+    [Inject] private CarrierService carrierService { get; set; }
+    [Inject] private TravelDetailService travelDetail { get; set; }
+    [Inject] private AlertServices AlertServices { get; set; }
+    private int selectedOptionIdCarrier { get; set; }
+    private List<Carrier>? ListCarriers { get; set; }
+    private List<TravelDetail> travelDetails { get; set; }
+    private DateTime startDate;
+    private DateTime endDate;
+    private decimal Total;
+
+    private async Task OnRangeSelected(DateRange range)
+    {
+        startDate = range.Start.UtcDateTime;
+        endDate = range.End.UtcDateTime;
+        if (selectedOptionIdCarrier != 0)
+        {
+            await GetReportTravel();
+        }
+        else
+        {
+            await AlertServices.SweetAlertMessage("Mensaje", "Seleccione el transportista.", SweetAlertIcon.Warning, 1000);
+        }
+    }
+    private void HandleSelectionCarrierChange(ChangeEventArgs e)
+    {
+        selectedOptionIdCarrier = Convert.ToInt32(e.Value);
+    }
+    protected override async Task OnInitializedAsync()
+    {
+
+        await GetCarriers();
+    }
+    private async Task GetCarriers()
+    {
+        await Task.Delay(1000);
+        ListCarriers = await carrierService.GetCarriersAsync();
+    }
+
+    private async Task GetReportTravel()
+    {
+        travelDetails = await travelDetail.GetTravelDetailsAsync(selectedOptionIdCarrier, startDate, endDate);
+        if (travelDetails != null)
+        {
+            Total = travelDetails.Sum(c => c.Total);
+        }
+    }
+
+}

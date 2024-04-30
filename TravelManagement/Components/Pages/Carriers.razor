@@ -1,0 +1,81 @@
+﻿@page "/carrier"
+@layout MainLayout
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@using BLL.Services
+@using Entities.Models
+@using WebApp.Components.Layout
+<PageTitle>Transportistas</PageTitle>
+<div class="row">
+    <div class="card">
+        <div class="card-header bg-white">
+           
+
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <h6 class="card-title">Transportistas</h6>
+                </div>
+                <div class="col-lg-4">
+                    <button type="button" @onclick="Create" class="btn btn-outline-info">Agregar Transportista</button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th scope="col">No.</th>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Tarifa/KM</th>
+                       
+
+                    </tr>
+                </thead>
+                <tbody>
+
+                    @if (carriers == null)
+                    {
+                        <h6>Cargando lista de transportistas.</h6>
+                    }
+                    else if (carriers.Count == 0)
+                    {
+                        <h6>No hay transportistas disponibles.</h6>
+                    }
+                    else
+                    {
+
+                        @foreach (var item in carriers)
+                        {
+                            <tr>
+                                <th scope="row">@item.CarrierId</th>
+                                <td>@item.Name</td>
+                                <td>@item.RatePerKilometer</td>
+                               
+                            </tr>
+                        }
+
+                    }
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+@code {
+    [Inject] private CarrierService carrierService { get; set; }
+    [Inject] private NavigationManager navigationManager { get; set; }
+    private List<Carrier> carriers { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        carriers = await carrierService.GetCarriersAsync();
+
+    }
+    protected void Create()
+    {
+        navigationManager.NavigateTo("createCarrier");
+    }
+ 
+
+}

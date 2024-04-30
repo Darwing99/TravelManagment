@@ -1,0 +1,80 @@
+﻿@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject NavigationManager navigation
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ProtectedSessionStorage protectedSessionStore
+<aside class="left-sidebar sidebar-dark" id="left-sidebar">
+    <div id="sidebar" class="sidebar sidebar-with-footer">
+        <!-- Aplication Brand -->
+        <div class="app-brand">
+            <a href="/index.html">
+            
+                <span class="brand-name">Travel System</span>
+            </a>
+        </div>
+        <!-- begin sidebar scrollbar -->
+        <div class="sidebar-left" data-simplebar style="height: 100%;">
+            <!-- sidebar menu -->
+            <ul class="nav sidebar-inner" id="sidebar-menu">
+                <li >
+                    <a class="sidenav-item-link" href="/branch">
+                        <i class="mdi mdi-briefcase-account-outline"></i>
+                        <span class="nav-text">Sucursales</span>
+                    </a>
+                </li>
+               
+                <li>
+                    <a class="sidenav-item-link" href="/employment">
+                        <i class="mdi mdi-chart-line"></i>
+                        <span class="nav-text">Colaboradores</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a class="sidenav-item-link" href="/travels">
+                        <i class="mdi mdi-chart-line"></i>
+                        <span class="nav-text">Viajes</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="sidenav-item-link" href="/report">
+                        <i class="mdi mdi-chart-line"></i>
+                        <span class="nav-text">Reportes de Viajes</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="sidenav-item-link" href="/carrier">
+                        <i class="mdi mdi-chart-line"></i>
+                        <span class="nav-text">Transportistas</span>
+                    </a>
+                </li>
+
+
+
+    </ul>
+
+    </div>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-footer-content">
+            <ul class="d-flex">
+                <li>
+                    <a class="btn btn-outline-light" type="button" @onclick="Cerrar"  title="Profile settings">Cerrar Sesion.</a>
+                </li>
+              
+            </ul>
+        </div>
+    </div>
+    </div>
+</aside>
+
+@code {
+    private async Task Cerrar()
+    {
+        await protectedSessionStore.DeleteAsync("RolId");
+
+        await protectedSessionStore.DeleteAsync("UserId");
+        await protectedSessionStore.DeleteAsync("name");
+        navigation.NavigateTo("/");
+    }
+}

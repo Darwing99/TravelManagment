@@ -1,0 +1,27 @@
+﻿@using BLL.Services
+
+ <header class="main-header mb-3" id="header">
+            <nav class="navbar navbar-expand-lg navbar-light" id="navbar">
+                <div class="m-3 pagetitle">
+                    <h4>Sistema de viajes   <span>Usuario: @name</span></h4>
+         
+                </div><!-- End Page Title -->
+
+               
+       
+            </nav>
+
+
+          </header>
+
+
+@code {
+    private string name { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        name = UserStateService.CurrentUser.Name;
+
+
+    }
+
+}

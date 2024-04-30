@@ -1,0 +1,179 @@
+﻿@page "/addEmployee"
+@layout MainLayout
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@using BLL.Services
+@using Entities.Models
+@using WebApp.Components.Layout
+
+<PageTitle>
+    Agregar Colaborador
+</PageTitle>
+<div class="row">
+
+
+<div class="col-lg-12">
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Datos de Colaborador</h5>
+
+            <!-- General Form Elements -->
+            <div>
+            
+            
+                <div class="row mb-3">
+                        <label class="col-sm-4 col-form-label">Seleccionar Colaborador</label>
+                    <div class="col-sm-8">
+                            <select @onchange="HandleSelectionEmployeeChange" class="form-select" aria-label="Default select example">
+                            <option value="0" selected>Seleccionar Colaborador</option>
+                                @if (ListEmployee == null)
+                                {
+                                    <option value="0"> Cargando información...</option>
+                                }
+                                else
+                                {
+                                    foreach (var item in ListEmployee)
+                                    {
+                                        <option value="@item.EmployeeId">@item.Name</option>
+                                    }
+
+                                }
+                        </select>
+                    </div>
+                </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-4 col-form-label">Seleccionar Sucursal</label>
+                        <div class="col-sm-8">
+                            <select @onchange="HandleSelectionBranchChange" class="form-select" aria-label="Default select example">
+                                <option value="0" selected>Seleccionar Sucursal</option>
+                                @if (ListBranches == null)
+                                {
+                                    <option value="0"> Cargando información...</option>
+                                }
+                                else
+                                {
+                                    foreach (var item in ListBranches)
+                                    {
+                                        <option value="@item.BranchId">@item.Name</option>
+                                    }
+                                    
+                                }
+                                
+                               
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label class="col-sm-4 col-form-label">Distancia(En Kilómetros)</label>
+                        <div class="col-sm-8">
+                            <input type="number" class="form-control" @bind="Distance" />
+                        </div>
+                    </div>
+                <div class="row mb-3">
+                    <label class="col-sm-2 col-form-label">Guardar Información</label>
+                    <div class="col-sm-10">
+                        <button type="button" @onclick="InsertData" class="btn btn-primary">Guardar</button>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+</div>
+@code {
+    [Inject] private EmployeeService? employeeService { get; set; }
+    [Inject] private BranchService? branchService { get; set; }
+    [Inject] NavigationManager? navigationManager { get; set; }
+    [Inject] private AlertServices AlertServices { get; set; }
+    [Inject] private EmployeeBranchAssignmenService employeeBranchAssignmenService{ get; set; } 
+    private List<Employee>? ListEmployee { get; set; }
+    private  List<Branch>? ListBranches{ get; set; }
+    private int Distance {get;set;}
+    private int selectedOptionIdBranch { get; set; }
+    private int selectedOptionIdEmployee { get; set; }
+    private EmployeeBranchAssignmen employeeBranchAssignmen;
+    protected override async Task OnInitializedAsync()
+    {
+
+        await GetEmployees();
+        await GetBranches();
+    }
+    private async Task GetEmployees()
+    {
+        ListEmployee = await employeeService.GetEmployeesAsync();
+    }
+    private async Task GetBranches()
+    {
+        ListBranches = await branchService.GetBranchesAsync();
+    }
+
+
+    private void HandleSelectionBranchChange(ChangeEventArgs e)
+    {
+        selectedOptionIdBranch = Convert.ToInt32(e.Value);
+    }
+    private void HandleSelectionEmployeeChange(ChangeEventArgs e)
+    {
+        selectedOptionIdEmployee = Convert.ToInt32(e.Value);
+    }
+    private async Task InsertData()
+    {
+        if (await Validations())
+        {
+            employeeBranchAssignmen = new()
+                {
+                    BranchId = selectedOptionIdBranch,
+                    EmployeeId = selectedOptionIdEmployee,
+                    DistanceToHome = (decimal)Distance,
+                    Status = true
+
+                };
+            if(employeeBranchAssignmenService.CountBranchesByEmployee(selectedOptionIdEmployee, selectedOptionIdBranch)>0)
+            {
+                await AlertServices.SweetAlertMessage("Mensaje", "El colaborador ya está registrado a una sucursal.", SweetAlertIcon.Warning, 1000);
+            }
+            else
+            {
+                var result = await employeeBranchAssignmenService.AddAsync(employeeBranchAssignmen);
+                if (result)
+                {
+                    await AlertServices.SweetAlertMessage("Mensaje", "Colaborador agregado correctamente.", SweetAlertIcon.Success, 1000);
+                }
+            }
+           
+        }
+       
+
+    }
+    private async Task<bool> Validations()
+    {
+       
+        if (selectedOptionIdEmployee == 0)
+        {
+            await AlertServices.SweetAlertMessage("Validación", "Seleccione un colaborador.", SweetAlertIcon.Warning, 1000);
+            return false;
+        }
+        if (selectedOptionIdBranch == 0)
+        {
+            await AlertServices.SweetAlertMessage("Validación", "Seleccione una sucursal.", SweetAlertIcon.Warning, 1000);
+
+            return false;
+        }
+        if (Distance == 0)
+        {
+            await AlertServices.SweetAlertMessage("Validación", "La distancia no puede ser 0.", SweetAlertIcon.Warning, 1000);
+            return false;
+        }
+        if (Distance > 50)
+        {
+            await AlertServices.SweetAlertMessage("Validación", "La distancia no puede ser mayor que 50.", SweetAlertIcon.Warning, 1000);
+            return false;
+        }
+        return true;
+    }
+}

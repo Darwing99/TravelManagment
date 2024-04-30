@@ -1,0 +1,82 @@
+﻿@page "/branch"
+@layout MainLayout
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@using BLL.Services
+@using Entities.Models
+@using WebApp.Components.Layout
+<PageTitle>Sucursales</PageTitle>
+<div class="row">
+    <div class="card">
+        <div class="card-header bg-white">
+            <h6 class="card-title">Sucursales</h6>
+          
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <button class="btn btn-outline-success" @onclick="NewColaborador">Administrar Colaboradores en sucursales</button>
+                </div>
+                <div class="col-lg-4">
+                    <button type="button" @onclick="Create" class="btn btn-outline-info">Crear nueva Sucursal</button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th scope="col">No.</th>
+              <th scope="col">Nombre</th>
+              <th scope="col">Dirección</th>
+             
+             
+            </tr>
+          </thead>
+          <tbody>
+
+                    @if (ListBranches == null)
+                    {
+                        <h6>Cargando lista de sucursales.</h6>
+                    } else if (ListBranches.Count == 0)
+                    {
+                        <h6>No hay sucursales disponibles.</h6>
+                    }
+                    else{
+                      
+                        @foreach (var item in ListBranches)
+                        {
+                            <tr>
+                            <th scope="row">@item.BranchId</th>
+                            <td>@item.Name</td>
+                            <td>@item.Address</td>
+                           
+                            </tr>
+                        }
+                       
+                        }
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+</div>
+@code {
+    [Inject]private BranchService branchService { get; set; }
+    [Inject]private NavigationManager navigationManager { get; set; }
+    private List<Branch> ListBranches { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        ListBranches = await branchService.GetBranchesAsync();
+       
+    }
+    protected void Create()
+    {
+        navigationManager.NavigateTo("createBranch");
+    }
+    private async Task NewColaborador()
+    {
+        navigationManager.NavigateTo("addEmployee");
+    }
+
+}

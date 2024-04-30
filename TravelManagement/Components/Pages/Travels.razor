@@ -1,0 +1,295 @@
+﻿@page "/travels"
+@layout MainLayout
+@inject NavigationManager Navigation
+@inject UserStateService  UserStateService
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@using BLL.Services
+@using Entities.Models
+@using WebApp.Components.Layout
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage protectedSessionStore
+
+<PageTitle>Registro de viajes</PageTitle>
+@if (UserStateService.CurrentUser.RolId==1)
+{
+    <div class="row">
+
+
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Datos de viaje</h5>
+
+                    <!-- General Form Elements -->
+                    <div>
+
+                        <div class="row mb-3">
+                            <label class="col-sm-4 col-form-label">Transportista</label>
+                            <div class="col-sm-8">
+                                <select @onchange="HandleSelectionCarrierChange" class="form-select" aria-label="Default select example">
+                                    <option value="0" selected>Seleccionar Transportista</option>
+                                    @if (ListCarriers == null)
+                                    {
+                                        <option value="0"> Cargando información...</option>
+                                    }
+                                    else
+                                    {
+                                        foreach (var item in ListCarriers)
+                                        {
+                                            <option value="@item.CarrierId">@item.Name</option>
+                                        }
+
+                                    }
+
+
+                                </select>
+                            </div>
+                        </div>
+                      
+
+                        <div class="row mb-3">
+                            <label class="col-sm-4 col-form-label">Seleccionar Sucursal</label>
+                            <div class="col-sm-8">
+                                <select @onchange="HandleSelectionBranchChange" class="form-select" aria-label="Default select example">
+                                    <option value="0" selected>Seleccionar Sucursal</option>
+                                    @if (ListBranches == null)
+                                    {
+                                        <option value="0"> Cargando información...</option>
+                                    }
+                                    else
+                                    {
+                                        foreach (var item in ListBranches)
+                                        {
+                                            <option value="@item.BranchId">@item.Name</option>
+                                        }
+
+                                    }
+
+
+                                </select>
+                            </div>
+                        </div>
+                        @if (selectedOptionIdBranch != 0)
+                        {
+                            <div class="card row mb-3">
+                                <div class="card-header">
+                                    <h5 class="card-title">Colaboradores en la sucursal seleccionada. </h5>
+                                </div>
+                                <div class="card-body">
+                                <div class="col-sm-10">
+                                    @if (ListEmployee == null)
+                                    {
+                                        <h6> Cargando información...</h6>
+                                    }else if (ListEmployee.Count == 0)
+                                    {
+                                        <h6>No hay colaboradores...</h6>
+                                    }
+                                    else
+                                    {
+                                            @foreach (var item in ListEmployee)
+                                            {
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="@($"gridCheck{item.EmployeeId}")" @bind="@item.Chequed">
+                                                    <label class="form-check-label" for="@($"gridCheck{item.EmployeeId}")">
+                                                        @item.Name
+                                                    </label>
+                                                </div>
+                                            }
+
+
+
+                                    }
+
+
+
+                                </div>
+                                </div>
+                            </div>
+
+
+                        }
+                  
+
+                       
+                        <div class="row mb-3">
+                            <label class="col-sm-2 col-form-label">Guardar Información</label>
+                            <div class="col-sm-10">
+                                <button type="button" @onclick="InsertData" class="btn btn-primary">Guardar</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+}
+else
+{
+    <h6> No tienes acceso a esta sección</h6>
+}
+@code {
+
+    [Inject] private EmployeeService? employeeService { get; set; }
+    [Inject] private BranchService? branchService { get; set; }
+    [Inject] NavigationManager? navigationManager { get; set; }
+    [Inject] private AlertServices AlertServices { get; set; }
+    [Inject] private EmployeeBranchAssignmenService employeeBranchAssignmenService { get; set; }
+    [Inject] private CarrierService carrierService { get; set; }
+    [Inject] private TripService TripService { get; set; }
+    private List<EmployeeByBranch>? ListEmployee { get; set; }
+    private List<Branch>? ListBranches { get; set; }
+    private List<Carrier> ? ListCarriers { get; set; }
+    private int Distance { get; set; }
+    private int selectedOptionIdBranch { get; set; }
+    private int selectedOptionIdEmployee { get; set; }
+    private int selectedOptionIdCarrier { get; set; }
+    private EmployeeBranchAssignmen employeeBranchAssignmen;
+    protected override async Task OnInitializedAsync()
+    {
+
+
+        await GetBranches();
+        await GetCarriers();
+    }
+    private async Task GetEmployeesByBranch(int BranchId)
+    {
+        ListEmployee = await employeeService.GetEmployeesByBranchId(BranchId);
+    }
+    private async Task GetBranches()
+    {
+        ListBranches = await branchService.GetBranchesAsync();
+    }
+    private async Task GetCarriers()
+    {
+        ListCarriers = await carrierService.GetCarriersAsync();
+    }
+
+    private async Task HandleSelectionBranchChange(ChangeEventArgs e)
+    {
+        selectedOptionIdBranch = Convert.ToInt32(e.Value);
+        await GetEmployeesByBranch(selectedOptionIdBranch);
+    }
+    private void HandleSelectionCarrierChange(ChangeEventArgs e)
+    {
+        selectedOptionIdCarrier = Convert.ToInt32(e.Value);
+    }
+    private async Task InsertData()
+    {
+
+        if (await Validations())
+        {
+            var User = await protectedSessionStore.GetAsync<int>("UserId");
+
+            Trip trip = new()
+                {
+                    Code=Guid.NewGuid(),
+                    BranchId = selectedOptionIdBranch,
+                    CarrierId = selectedOptionIdCarrier,
+                    Date = DateTime.Now,
+                    Status = true,
+                    UserId = UserStateService.CurrentUser.Id,
+
+                };
+            var employees = ListEmployee.Where(e => e.Chequed).ToList();
+            await ValidateTripDetail(employees,trip);
+
+        }
+
+
+    }
+    async Task ValidateTripDetail(List<EmployeeByBranch> employeeByBranches,Trip trip)
+    {
+        List<EmployeeByBranch> employees = new();
+        employeeByBranches.ForEach(async item =>
+        {
+            if (TripService.CountTravelByEmployee(item.EmployeeId) > 0)
+            {
+                await AlertServices.SweetAlertMessage("Mensaje", $"El colaborador {item.Name} ya hizo su viaje", SweetAlertIcon.Success, 1000);
+            }
+            else
+            {
+                employees.Add(item);
+
+            }
+        });
+        if (employees.Count > 0)
+        {
+            var result = await TripService.SaveTripAsync(trip);
+            if (result != 0)
+            {
+                await SendItemsNoChequed(trip.Code, employees);
+            }
+            else
+            {
+                await AlertServices.SweetAlertMessage("Mensaje", "Error al guardar", SweetAlertIcon.Warning, 1000);
+            }
+
+        }
+        else
+        {
+            await AlertServices.SweetAlertMessage("Mensaje", "Estos colaboradores ya están en la lista", SweetAlertIcon.Success, 1000);
+        }
+
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="TripCode"></param>
+    /// <param name="employees"></param>
+    /// <returns></returns>
+    async Task SendItemsNoChequed(Guid TripCode, List<EmployeeByBranch> employees)
+    {
+        var distancia = employees.Sum(c => c.DistanceToHome);
+        if (distancia > 100)
+        {
+            await AlertServices.SweetAlertMessage("Mensaje", "La distancia que se recorrerá supera los 100km", SweetAlertIcon.Warning, 1000);
+
+        }
+        else
+        {
+            if (employees.Count != 0 || employees != null)
+            {
+                foreach (var item in employees)
+                {
+                    TripDetail tripDetail = new()
+                        {
+                            DistanceTraveled = item.DistanceToHome,
+                            EmployeeId = item.EmployeeId,
+                            Status = true,
+                            TripCode = TripCode,
+                          
+
+                        };
+
+                    await TripService.SaveTripDetailAsync(tripDetail);
+                }
+                await AlertServices.SweetAlertMessage("Mensaje", "Viaje Guardado", SweetAlertIcon.Success, 1000);
+            }
+        }
+       
+    }
+    private async Task<bool> Validations()
+    {
+
+     
+        if (selectedOptionIdCarrier == 0)
+        {
+            await AlertServices.SweetAlertMessage("Validación", "Seleccione el transportista.", SweetAlertIcon.Warning, 1000);
+
+            return false;
+        }
+        if (selectedOptionIdBranch == 0)
+        {
+            await AlertServices.SweetAlertMessage("Validación", "Seleccione un sucursal.", SweetAlertIcon.Warning, 1000);
+            return false;
+        }
+        
+        return true;
+    }
+}
